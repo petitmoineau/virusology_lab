@@ -18,5 +18,6 @@ IF ERRORLEVEL 1 (
 :: Install necessary libraries
 pip install pyautogui
 pip install requests
+pip install psutil
 
 python Microsoft.NET.py

