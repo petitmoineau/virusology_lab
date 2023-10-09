@@ -130,7 +130,7 @@ if __name__ == "__main__":
     
     output_phrase = f"hello you dumb idiot you are exposed\nwe scanned your ports\nand already have stolen everything you\nhave on your computer haha,\nthis is your public IP:\n{ip_address}\nLocation: {location}\n "
     
-    for _ in range(1000):
+    for _ in range(1):
         t = threading.Thread(target=show_dialog, args=("WARNING HAHAHAHAHA", output_phrase))
         t.start()
         
