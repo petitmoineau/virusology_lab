@@ -16,6 +16,9 @@ def process_nslookup_output(output):
     ip_addresses = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', output)
     if len(ip_addresses) > 1:
         return ip_addresses[1]
+    ip_addresses = re.findall(r'\b([0-9a-fA-F]{1,4}(:[0-9a-fA-F]{1,4}){7})\b', output)
+    if len(ip_addresses) > 0:
+        return ip_addresses[0][0]
     return "IP not found"
 
 def run_command(cmd):
